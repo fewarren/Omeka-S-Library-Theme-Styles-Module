@@ -1,0 +1,51 @@
+<?php
+$escape = $this->plugin('escapeHtml');
+?>
+<h2>LibraryThemeStyles Configuration</h2>
+<p>Use this tool to load preset defaults into LibraryTheme settings for a site, or save the current settings as the defaults for a preset.</p>
+
+<!-- IMPORTANT: No <form> wrapper here so Omeka's module Configure form (with CSRF) wraps these inputs -->
+<label>Target Preset:
+  <select name="target_preset">
+    <option value="modern">Modern</option>
+    <option value="traditional">Traditional</option>
+  </select>
+</label>
+
+<label>Site Slug (required for actions):
+  <input type="text" name="site" placeholder="library" />
+</label>
+
+
+<div style="margin: 12px 0; display: grid; grid-template-columns: 1fr; gap: 8px; max-width: 680px;">
+  <button type="submit" name="action" value="load_defaults_into_settings" class="button">Apply Preset to This Site</button>
+  <small>Applies the selected preset (Modern/Traditional) to the LibraryTheme settings for the site you entered above.</small>
+
+  <button type="submit" name="action" value="save_settings_as_defaults" class="button">Save This Site’s Current Settings as Preset Defaults</button>
+  <small>Captures the site’s current LibraryTheme settings as the saved defaults for the chosen preset.</small>
+
+  <details>
+    <summary style="cursor:pointer; font-weight:600;">Advanced tools (optional)</summary>
+    <div style="padding:8px 12px; border-left: 3px solid #ccc; margin-top:6px; display:grid; gap:8px;">
+      <button type="submit" name="action" value="inspect_theme_settings" class="button">Show Current Settings Summary</button>
+
+      <div>
+        <label>Check a specific setting by name:</label>
+        <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+          <input type="text" name="inspect_key" placeholder="e.g., toc_hover_background_color" style="min-width: 28ch;" />
+          <button type="submit" name="action" value="inspect_key" class="button">Check Value</button>
+          <button type="submit" name="action" value="diff_vs_preset" class="button">Compare to Preset</button>
+        </div>
+      </div>
+
+      <div>
+        <label>Stored Defaults (saved from a site)</label>
+        <div style="display:flex; gap:8px; flex-wrap:wrap;">
+          <button type="submit" name="action" value="verify_defaults_vs_settings" class="button">Verify Defaults vs Current</button>
+          <button type="submit" name="action" value="load_stored_defaults" class="button">Load Defaults Back into Site</button>
+        </div>
+      </div>
+    </div>
+  </details>
+</div>
+
