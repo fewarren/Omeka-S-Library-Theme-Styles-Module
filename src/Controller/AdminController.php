@@ -57,37 +57,44 @@ class AdminController extends AbstractActionController
 
     private function applyPresetToThemeSettings(?string $siteSlug, string $themeKey, string $preset): array
     {
-        // Read current preset maps from theme-setting-css.phtml or hardcode here:
         $presets = $this->getPresetMap();
         if (!isset($presets[$preset])) {
             throw new \RuntimeException('Unknown preset: ' . $preset);
         }
         $values = $presets[$preset];
 
-        // Update theme settings via Omeka API
+        // Resolve site and settings scope
         $site = $siteSlug
             ? $this->api->read('sites', ['slug' => $siteSlug])->getContent()
             : null;
 
-        // Get site settings adapter
         $siteSettings = $this->settings();
         if ($site) {
             $siteSettings = $this->siteSettings();
             $siteSettings->setSiteId($site->id());
         }
 
-        $count = 0; $details = [];
+        // Determine active theme slug and namespaced settings bucket
+        $themeSlug = $site && method_exists($site, 'theme') && $site->theme()
+            ? (string) $site->theme()
+            : 'library-theme';
+        $key = 'theme_settings_' . $themeSlug;
+
+        $current = $siteSettings->get($key, []);
+        $current = is_array($current) ? $current : [];
+
+        $count = 0;
         foreach ($values as $k => $v) {
-            $siteSettings->set($themeKey . '_' . $k, $v);
+            $current[$k] = $v;
             $count++;
-            $details[$k] = $v;
         }
-        return [$count, $details];
+        $siteSettings->set($key, $current);
+
+        return [$count, $current];
     }
 
     private function saveSettingsAsPresetDefaults(?string $siteSlug, string $themeKey, string $preset): array
     {
-        // Read current saved settings and persist as the new defaults for the preset (store in a single JSON)
         $site = $siteSlug
             ? $this->api->read('sites', ['slug' => $siteSlug])->getContent()
             : null;
@@ -98,15 +105,24 @@ class AdminController extends AbstractActionController
             $siteSettings->setSiteId($site->id());
         }
 
-        // Collect all settings with the theme prefix
-        $prefix = $themeKey . '_';
-        $stored = [];
-        foreach ($siteSettings->get(null) as $key => $val) {
-            if (strpos($key, $prefix) === 0) {
-                $stored[substr($key, strlen($prefix))] = $val;
+        $themeSlug = $site && method_exists($site, 'theme') && $site->theme()
+            ? (string) $site->theme()
+            : 'library-theme';
+
+        // Prefer namespaced theme settings; fall back to container variants
+        $namespacedKey = 'theme_settings_' . $themeSlug;
+        $stored = $siteSettings->get($namespacedKey, []);
+        if (!is_array($stored) || !$stored) {
+            $container = $siteSettings->get('theme_settings', []);
+            if (is_array($container)) {
+                if (isset($container[$themeSlug]) && is_array($container[$themeSlug])) {
+                    $stored = $container[$themeSlug];
+                } elseif (!empty($container)) {
+                    $stored = $container; // flat array variant
+                }
             }
         }
-        if (!$stored) {
+        if (!is_array($stored) || !$stored) {
             return [0, []];
         }
 
@@ -118,14 +134,13 @@ class AdminController extends AbstractActionController
 
     private function getPresetMap(): array
     {
-        // Snapshot of our Modern/Traditional presets matching the theme’s expectations
         return [
             'modern' => [
                 'h1_font_family' => 'cormorant', 'h1_font_size' => '2.5rem', 'h1_font_color' => '#b37c05', 'h1_font_weight' => '600',
                 'h2_font_family' => 'cormorant', 'h2_font_size' => '2rem', 'h2_font_color' => '#b37c05', 'h2_font_weight' => '600',
                 'h3_font_family' => 'georgia',   'h3_font_size' => '1.5rem', 'h3_font_color' => '#b37c05', 'h3_font_weight' => '500',
                 'body_font_family' => 'helvetica','body_font_size' => '1.125rem','body_font_color' => '#b37c05','body_font_weight' => '400',
-                'tagline_font_family' => 'georgia','tagline_font_weight' => '600','tagline_font_style' => 'italic','tagline_font_color' => '#b37c05',
+                'tagline_font_family' => 'georgia','tagline_font_weight' => '600','tagline_font_style' => 'italic','tagline_font_color' => '#b37c05', 'tagline_hover_text_color' => '#ffffff', 'tagline_hover_background_color' => '#f3d491',
                 'primary_color' => '#b37c05', 'sacred_gold' => '#D4AF37',
                 'toc_font_family' => 'georgia', 'toc_font_size' => 'normal', 'toc_font_weight' => '700',
                 'toc_text_color' => '#b37c05', 'toc_hover_text_color' => '#ffffff', 'toc_hover_background_color' => '#f3d491',
