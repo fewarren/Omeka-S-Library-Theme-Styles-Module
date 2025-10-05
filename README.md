@@ -1,97 +1,266 @@
 # LibraryThemeStyles (Omeka S Module)
 
-A helper module for Omeka S that makes it easy to apply design presets to the Library Theme, and to capture/restore a site’s current theme settings as saved defaults. Use it to keep styles consistent across sites or to revert quickly to a known-good configuration.
+A comprehensive helper module for Omeka S that provides advanced theme management capabilities for the Library Theme. Features include design preset application, theme settings backup/restore, and a modern service-oriented architecture for reliable theme configuration management.
 
-## Compatibility and version
-- Omeka S: ^4.1.0 (see config/module.ini)
-- Module version: 1.0.25
-- Intended theme: “Library Theme” (theme slug defaults to `library-theme` when the active theme cannot be detected)
+## Features
 
-## How to access it
-- Full toolset: Admin → Modules → LibraryThemeStyles → Configure
-  - This page includes the advanced tools (inspect, verify, diff, load stored defaults, etc.).
-- Quick page (minimal): /admin/library-theme-styles
-  - A simple screen for the two most common actions (apply preset to site, save current settings as defaults).
+- **Design Presets**: Apply Modern or Traditional design presets to sites
+- **Settings Management**: Backup and restore theme settings across sites
+- **Service Architecture**: Modern, maintainable codebase with comprehensive error handling
+- **Advanced Tools**: Inspect, compare, and verify theme settings
+- **User-Friendly Interface**: Both simple and advanced configuration options
+- **Robust Error Handling**: Comprehensive validation and user-friendly error messages
 
-## What this module does
-- Apply a preset (Modern or Traditional) to a site’s Library Theme settings
-- Save the current site’s Library Theme settings as the defaults for a preset (stored in Omeka settings)
-- Load the stored defaults back into a site
-- Verify that stored defaults and the site’s current settings match
-- Inspect a specific setting, or show a short summary for quick checks
+## Compatibility and Version
 
-You don’t need to edit code or configuration files. All actions are exposed via the module’s admin UI.
+- **Omeka S**: ^4.1.0 (see config/module.ini)
+- **Module Version**: 2.0.0 (Major refactor with service architecture)
+- **Intended Theme**: "Library Theme" (theme slug defaults to `library-theme` when the active theme cannot be detected)
+- **PHP**: ^8.0 (with strict typing support)
 
-## Presets included
-- modern: opinionated headings/body/TOC/menu/pagination colors and font families, plus header/logo sizing
-- traditional: a more classic palette and typography for the same areas
+## Architecture
 
-## Before you begin
-- Know the site slug (for example: `library`).
-- Pick a preset to work with: Modern or Traditional.
-- The module detects the active theme and updates the correct settings bucket automatically; it falls back to `library-theme` if needed.
+This module follows modern PHP best practices with a service-oriented architecture:
 
-## Key actions (simple)
-On both the Configure page and the quick page you’ll see two primary actions:
+- **PresetManager**: Centralized preset definition and management
+- **ThemeSettingsService**: Business logic for theme operations
+- **ModuleConfigService**: Configuration form handling
+- **ErrorHandler**: Comprehensive error handling and logging
+- **ModuleConfig**: Centralized configuration constants
 
-1) Apply Preset to This Site
-- Applies the selected preset (Modern/Traditional) to the Library Theme settings for the site you enter.
-- Use this to switch a site to a preset look.
+## How to Access
 
-2) Save This Site’s Current Settings as Preset Defaults
-- Captures the site’s current Library Theme settings and saves them as the defaults for the chosen preset.
-- Use this after you tweak settings and want those to become the new defaults for later reuse.
+### Full Toolset (Recommended)
+**Admin → Modules → LibraryThemeStyles → Configure**
+- Complete interface with all advanced tools
+- Inspect, verify, diff, and load stored defaults
+- Debug options and detailed feedback
 
-## Advanced tools (Configure page)
-- Show Current Settings Summary
-  - Reports how many settings exist for the active Library Theme bucket on the site.
-- Check a specific setting by name
-  - Enter a key such as `tagline_hover_background_color` to see its stored value.
-- Compare to Preset
-  - Shows differences between the site’s current settings and the built‑in preset map.
-- Verify Defaults vs Current
-  - Compares stored defaults to the site’s current settings; lists missing keys and value differences.
-- Load Defaults Back into Site
-  - Loads the stored defaults into the site’s theme settings.
+### Quick Interface
+**`/admin/library-theme-styles`**
+- Simplified interface for common operations
+- Apply presets and save current settings
+- Ideal for routine theme management
 
-## Typical workflows
-- Roll a site to a preset look
-  1. Enter Site Slug
-  2. Choose preset (Modern/Traditional)
-  3. Click “Apply Preset to This Site”
+## What This Module Does
 
-- Capture current look as defaults
-  1. Enter Site Slug
-  2. Choose preset (Modern/Traditional)
-  3. Click “Save This Site’s Current Settings as Preset Defaults”
-  4. Optional: Click “Verify Defaults vs Current” to confirm everything saved
+### Core Operations
+- **Apply Presets**: Apply Modern or Traditional design presets to any site
+- **Save Settings**: Capture current site theme settings as preset defaults
+- **Load Defaults**: Restore previously saved settings to a site
+- **Verify Settings**: Compare current settings with stored defaults
+- **Inspect Settings**: View individual setting values and summaries
 
-- Restore from saved defaults
-  1. Enter Site Slug
-  2. Choose preset (Modern/Traditional)
-  3. Click “Load Defaults Back into Site”
-  4. Optional: “Verify Defaults vs Current” should show no differences
+### Advanced Features
+- **Setting Comparison**: Detailed diff between current settings and presets
+- **Validation**: Comprehensive input validation with user-friendly error messages
+- **Logging**: Detailed operation logging for debugging and audit trails
+- **Error Recovery**: Graceful handling of errors with rollback capabilities
 
-## How it works (technical)
-- The active theme slug for the site is detected dynamically; if it cannot be determined, the module uses `library-theme` as a safe default.
-- Site theme settings are stored in the namespaced key `theme_settings_<themeSlug>`. The module reads/writes this bucket and, when present, keeps the generic `theme_settings` container consistent.
-- Preset “defaults” are saved in Omeka’s global settings as JSON under keys like `LibraryThemeStyles_defaults_modern` and `LibraryThemeStyles_defaults_traditional`.
+## Presets Included
+
+### Modern Preset
+- **Typography**: Cormorant Garamond headings with Helvetica body text
+- **Colors**: Warm gold primary (#b37c05) with sacred gold accents (#D4AF37)
+- **Style**: Contemporary design with clean lines and modern spacing
+- **Features**: Pill-style breadcrumbs and navigation elements
+
+### Traditional Preset
+- **Typography**: Georgia headings and body text for classic readability
+- **Colors**: Deep navy primary (#1F3A5F) with burgundy accents (#7A1E3A)
+- **Style**: Classic, academic design with traditional spacing
+- **Features**: Conservative styling suitable for institutional sites
 
 ## Installation
-- Place this folder in your Omeka S installation at `modules/LibraryThemeStyles`.
-- In Admin → Modules, click Install/Enable for “LibraryThemeStyles”.
-- No database migrations are required.
 
-## Notes
-- Stored defaults are independent of theme files and can be reused across sites.
-- After applying or loading values, the Theme Settings screen should reflect the stored values. If needed, refresh the page.
-- If a setting doesn’t look right, use “Check a specific setting by name” to inspect the exact value.
+### Requirements
+- Omeka S ^4.1.0
+- PHP ^8.0 with strict typing support
+- LibraryTheme installed and active
+
+### Installation Steps
+1. **Download**: Place this module folder in your Omeka S installation at `modules/LibraryThemeStyles`
+2. **Install**: In Admin → Modules, click Install/Enable for "LibraryThemeStyles"
+3. **Configure**: Access the configuration interface via Admin → Modules → LibraryThemeStyles → Configure
+4. **Verify**: Test with a site to ensure proper functionality
+
+### No Database Changes
+- No database migrations are required
+- Settings are stored in Omeka's existing settings system
+- Safe to install and uninstall without data loss
+
+## Usage Guide
+
+### Quick Start
+1. **Navigate** to Admin → Modules → LibraryThemeStyles → Configure
+2. **Enter Site Slug** (e.g., "library")
+3. **Choose Preset** (Modern or Traditional)
+4. **Click "Apply Preset to This Site"**
+
+### Typical Workflows
+
+#### Apply a Preset to a Site
+1. Enter Site Slug
+2. Choose preset (Modern/Traditional)
+3. Click "Apply Preset to This Site"
+4. Verify changes in the site's theme settings
+
+#### Save Current Look as Defaults
+1. Configure your site's theme settings to your liking
+2. Enter Site Slug
+3. Choose preset slot (Modern/Traditional)
+4. Click "Save This Site's Current Settings as Preset Defaults"
+5. Optional: Click "Verify Defaults vs Current" to confirm
+
+#### Restore from Saved Defaults
+1. Enter Site Slug
+2. Choose preset (Modern/Traditional)
+3. Click "Load Defaults Back into Site"
+4. Verify: "Verify Defaults vs Current" should show no differences
+
+### Advanced Tools
+
+#### Inspect Theme Settings
+- **Purpose**: View current theme settings summary
+- **Usage**: Enter site slug and click "Show Current Settings Summary"
+- **Output**: Count of settings and sample keys for verification
+
+#### Check Specific Setting
+- **Purpose**: Inspect individual setting values
+- **Usage**: Enter site slug and setting key (e.g., `tagline_hover_background_color`)
+- **Output**: Current value of the specified setting
+
+#### Compare to Preset
+- **Purpose**: See differences between current settings and built-in presets
+- **Usage**: Enter site slug, choose preset, click "Compare to Preset"
+- **Output**: List of differences with current vs. preset values
+
+#### Verify Defaults vs Current
+- **Purpose**: Compare stored defaults with current site settings
+- **Usage**: Enter site slug, choose preset, click "Verify Defaults vs Current"
+- **Output**: Missing keys, value differences, and match statistics
+
+## Technical Details
+
+### How It Works
+- **Theme Detection**: Automatically detects active theme slug for the site
+- **Settings Storage**: Uses namespaced keys (`theme_settings_<themeSlug>`) for site-specific settings
+- **Defaults Storage**: Saves preset defaults in global settings as JSON under keys like `LibraryThemeStyles_defaults_modern`
+- **Fallback Logic**: Falls back to `library-theme` slug if theme detection fails
+
+### Service Architecture
+```
+Module.php
+├── ModuleConfigService (Form handling)
+│   ├── ThemeSettingsService (Business logic)
+│   ├── ErrorHandler (Error management)
+│   └── PresetManager (Preset definitions)
+└── ModuleConfig (Configuration constants)
+```
+
+### Error Handling
+- **Input Validation**: Comprehensive validation of all user inputs
+- **Error Logging**: Detailed logging with unique error IDs for support
+- **User-Friendly Messages**: Technical errors converted to understandable messages
+- **Graceful Degradation**: System continues working even when errors occur
+
+### Security Features
+- **Input Sanitization**: All inputs are validated and sanitized
+- **Type Safety**: Strict typing throughout the codebase
+- **Error Boundaries**: Errors are contained and don't crash the system
+- **Audit Trail**: All operations are logged for security and debugging
 
 ## Troubleshooting
-- “Verify defaults vs current shows defaults=0”
-  - No stored defaults exist yet for that preset. Click “Save This Site’s Current Settings as Preset Defaults,” then verify again.
-- “A field in the Theme Settings screen didn’t change”
-  - Refresh the page. If it still doesn’t match, inspect the specific key. If the stored value looks correct but the UI differs, save the Theme Settings form once and reload. If it still doesn’t, check for customizations.
+
+### Common Issues
+
+#### "Verify defaults vs current shows defaults=0"
+- **Cause**: No stored defaults exist for that preset
+- **Solution**: Click "Save This Site's Current Settings as Preset Defaults" first
+
+#### "A field in the Theme Settings screen didn't change"
+- **Cause**: Browser cache or form state issues
+- **Solution**: 
+  1. Refresh the page
+  2. If still incorrect, inspect the specific key value
+  3. Save the Theme Settings form once and reload
+  4. Check for theme customizations that might override settings
+
+#### "Error ID: lts_error_xxxxx"
+- **Cause**: System error occurred during operation
+- **Solution**: 
+  1. Note the error ID for support
+  2. Check the error message for specific guidance
+  3. Try the operation again
+  4. Contact support with the error ID if problem persists
+
+#### "Site slug validation failed"
+- **Cause**: Invalid or missing site slug
+- **Solution**: 
+  1. Verify the site slug exists in Admin → Sites
+  2. Use exact slug (case-sensitive)
+  3. Ensure site is active and accessible
+
+### Debug Mode
+Enable debug mode by checking the "Debug" option in the configuration form:
+- **Before/After Counts**: Shows setting counts before and after operations
+- **Sample Data**: Displays sample of stored defaults
+- **Detailed Logging**: Additional information for troubleshooting
+
+### Getting Help
+1. **Check Error Messages**: Look for specific error IDs and messages
+2. **Enable Debug Mode**: Use debug options for additional information
+3. **Inspect Settings**: Use "Check a specific setting by name" to verify values
+4. **Review Logs**: Check system logs for detailed error information
 
 ## Uninstalling
-- Removing this module does not delete your site’s theme settings or the stored defaults. You can safely disable/uninstall it without losing theme configuration.
+
+### Safe Removal
+- **Settings Preserved**: Removing this module does not delete site theme settings
+- **Defaults Preserved**: Stored preset defaults remain in the system
+- **No Data Loss**: Safe to disable/uninstall without losing theme configuration
+- **Reversible**: Can be reinstalled later with all data intact
+
+### Clean Uninstall (Optional)
+If you want to remove all traces of the module:
+1. Note any stored defaults you want to keep
+2. Disable the module in Admin → Modules
+3. Manually remove stored defaults from global settings (keys starting with `LibraryThemeStyles_defaults_`)
+4. Remove the module folder from `modules/LibraryThemeStyles`
+
+## Development
+
+### Contributing
+- Follow PSR-12 coding standards
+- Use strict typing throughout
+- Add comprehensive error handling
+- Include unit tests for new features
+- Update documentation for changes
+
+### Testing
+- Test all operations with both Modern and Traditional presets
+- Verify error handling with invalid inputs
+- Test with multiple sites and theme configurations
+- Ensure backward compatibility with existing installations
+
+## Changelog
+
+### Version 2.0.0 (Current)
+- **Major Refactor**: Complete rewrite with service-oriented architecture
+- **Enhanced Error Handling**: Comprehensive validation and user-friendly messages
+- **Improved Performance**: Optimized code with reduced duplication
+- **Better Documentation**: Complete documentation overhaul
+- **Type Safety**: Full PHP 8.0+ strict typing support
+
+### Version 1.x.x (Legacy)
+- Basic preset application and settings management
+- Simple error handling
+- Monolithic code structure
+
+## License
+
+This module is released under the same license as Omeka S. See the Omeka S license for details.
+
+## Support
+
+For issues, questions, or contributions, please refer to the module's documentation or contact the development team with specific error IDs and detailed descriptions of problems encountered.

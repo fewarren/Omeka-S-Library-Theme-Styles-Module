@@ -1,9 +1,11 @@
 #!/bin/bash
 
-# Fixed Deploy Script for DerivativeMedia Module
-# This script reliably deploys development files to production
+# LibraryThemeStyles Module Deployment Script
+# Reliably deploys development files to production with comprehensive validation
+# Version: 2.0.0 - Enhanced with better error handling and verification
 
 set -e  # Exit on any error
+set -u  # Exit on undefined variables
 
 # Configuration
 MODULE_NAME="LibraryThemeStyles"
@@ -13,6 +15,9 @@ WEB_USER="www-data"
 WEB_GROUP="www-data"
 DRY_RUN=false
 FORCE=false
+BACKUP_DIR="/tmp"
+ROLLBACK_AVAILABLE=false
+DEPLOYMENT_LOG=""
 
 # Colors for output
 RED='\033[0;31m'
@@ -87,11 +92,20 @@ OPTIONS:
     -o, --omeka-root PATH    Path to Omeka S installation (required)
     -f, --force             Force deployment (overwrite existing)
     -d, --dry-run           Show what would be done without making changes
+    -b, --backup-dir PATH   Custom backup directory (default: /tmp)
     -h, --help              Show this help message
 
 EXAMPLES:
     $0 -o /var/www/omeka-s --force
     $0 --omeka-root /var/www/omeka-s --dry-run
+    $0 -o /var/www/omeka-s --backup-dir /home/backups
+
+FEATURES:
+    - Automatic version bumping
+    - Comprehensive validation
+    - Rollback capability on failure
+    - Detailed logging and verification
+    - Safe file exclusion patterns
 
 EOF
 }
@@ -111,6 +125,10 @@ while [[ $# -gt 0 ]]; do
             DRY_RUN=true
             shift
             ;;
+        -b|--backup-dir)
+            BACKUP_DIR="$2"
+            shift 2
+            ;;
         -h|--help)
             show_help
             exit 0
@@ -129,6 +147,10 @@ if [[ -z "$OMEKA_ROOT" ]]; then
     show_help
     exit 1
 fi
+
+# Initialize deployment log
+DEPLOYMENT_LOG="$BACKUP_DIR/librarythemestyles_deploy_$(date +"%Y%m%d_%H%M%S").log"
+log_info "Deployment log: $DEPLOYMENT_LOG"
 
 # Version bumping function
 bump_version() {
@@ -240,24 +262,41 @@ validate_environment() {
 # Backup function
 create_backup() {
     local target_dir="$OMEKA_ROOT/modules/$MODULE_NAME"
-    
+
     if [[ ! -d "$target_dir" ]]; then
         log_info "No existing module to backup"
         return 0
     fi
-    
+
     log_info "Creating backup of existing module..."
-    
+
     if [[ "$DRY_RUN" == true ]]; then
         log_info "[DRY RUN] Would create backup of $target_dir"
         return 0
     fi
-    
+
     local timestamp=$(date +"%Y%m%d_%H%M%S")
-    local backup_dir="/tmp/${MODULE_NAME}_backup_$timestamp"
-    
-    cp -r "$target_dir" "$backup_dir"
-    log_success "Backup created: $backup_dir"
+    local backup_path="$BACKUP_DIR/${MODULE_NAME}_backup_$timestamp"
+
+    # Validate backup directory
+    if ! validate_safe_directory "$BACKUP_DIR" "backup creation"; then
+        log_error "Invalid backup directory: $BACKUP_DIR"
+        return 1
+    fi
+
+    # Create backup directory if it doesn't exist
+    mkdir -p "$BACKUP_DIR"
+
+    # Create backup
+    if cp -r "$target_dir" "$backup_path"; then
+        log_success "Backup created: $backup_path"
+        ROLLBACK_AVAILABLE=true
+        echo "BACKUP_PATH=$backup_path" >> "$DEPLOYMENT_LOG"
+        return 0
+    else
+        log_error "Failed to create backup"
+        return 1
+    fi
 }
 
 # Deploy function
@@ -284,11 +323,13 @@ deploy_module() {
     
     # Copy all files except deployment scripts
     log_info "Copying module files..."
-    
+
     # Use rsync for reliable copying with exclusions
-    rsync -av \
+    if ! rsync -av \
         --exclude='deploy*.sh' \
-        --exclude='*.md' \
+        --exclude='README_NEW.md' \
+        --exclude='*_IMPROVEMENTS.md' \
+        --exclude='PageBlocks-Bug-Report.md' \
         --exclude='test-*.sh' \
         --exclude='fix-*.sh' \
         --exclude='force-*.sh' \
@@ -298,7 +339,13 @@ deploy_module() {
         --exclude='trace-*.php' \
         --exclude='*.backup' \
         --exclude='.git*' \
-        "$SCRIPT_DIR/" "$target_dir/"
+        --exclude='.vscode' \
+        --exclude='node_modules' \
+        --exclude='*.log' \
+        "$SCRIPT_DIR/" "$target_dir/"; then
+        log_error "Failed to copy module files"
+        return 1
+    fi
     
     # Verify critical files were copied
     local critical_files=("Module.php" "config/module.ini" "config/module.config.php")
@@ -347,9 +394,20 @@ clear_cache() {
         return 0
     fi
     
-    # Clear PHP-FPM cache
+    # Clear PHP-FPM cache - try multiple common versions
     if command -v systemctl >/dev/null 2>&1; then
-        systemctl reload php8.3-fpm 2>/dev/null || systemctl reload php-fpm 2>/dev/null || log_warning "Could not reload PHP-FPM"
+        local php_reloaded=false
+        for php_version in "php8.3-fpm" "php8.2-fpm" "php8.1-fpm" "php8.0-fpm" "php-fpm"; do
+            if systemctl reload "$php_version" 2>/dev/null; then
+                log_info "Reloaded $php_version"
+                php_reloaded=true
+                break
+            fi
+        done
+
+        if [[ "$php_reloaded" == false ]]; then
+            log_warning "Could not reload any PHP-FPM service"
+        fi
     fi
     
     # Clear Omeka S cache
@@ -380,6 +438,40 @@ clear_cache() {
     fi
     
     log_success "Cache cleared successfully"
+}
+
+# Rollback function
+rollback_deployment() {
+    if [[ "$ROLLBACK_AVAILABLE" != true ]]; then
+        log_error "No backup available for rollback"
+        return 1
+    fi
+
+    log_warning "Rolling back deployment..."
+
+    local backup_path
+    backup_path=$(grep "BACKUP_PATH=" "$DEPLOYMENT_LOG" | cut -d'=' -f2)
+
+    if [[ -z "$backup_path" || ! -d "$backup_path" ]]; then
+        log_error "Backup path not found or invalid: $backup_path"
+        return 1
+    fi
+
+    local target_dir="$OMEKA_ROOT/modules/$MODULE_NAME"
+
+    # Remove failed deployment
+    if [[ -d "$target_dir" ]]; then
+        rm -rf "$target_dir"
+    fi
+
+    # Restore backup
+    if cp -r "$backup_path" "$target_dir"; then
+        log_success "Rollback completed successfully"
+        return 0
+    else
+        log_error "Rollback failed"
+        return 1
+    fi
 }
 
 # Verification function
@@ -427,30 +519,78 @@ main() {
     log_info "Starting deployment of $MODULE_NAME module"
     log_info "Source: $SCRIPT_DIR"
     log_info "Target: $OMEKA_ROOT/modules/$MODULE_NAME"
-    
+
     if [[ "$DRY_RUN" == true ]]; then
         log_warning "DRY RUN MODE - No actual changes will be made"
     fi
-    
-    validate_environment
-    bump_version
-    create_backup
-    deploy_module
-    set_permissions
-    clear_cache
-    
-    if [[ "$DRY_RUN" != true ]]; then
-        verify_deployment
+
+    # Log deployment start
+    echo "DEPLOYMENT_START=$(date)" >> "$DEPLOYMENT_LOG"
+    echo "SOURCE_DIR=$SCRIPT_DIR" >> "$DEPLOYMENT_LOG"
+    echo "TARGET_DIR=$OMEKA_ROOT/modules/$MODULE_NAME" >> "$DEPLOYMENT_LOG"
+
+    # Execute deployment steps with error handling
+    if ! validate_environment; then
+        log_error "Environment validation failed"
+        exit 1
     fi
-    
+
+    if ! bump_version; then
+        log_error "Version bump failed"
+        exit 1
+    fi
+
+    if ! create_backup; then
+        log_error "Backup creation failed"
+        exit 1
+    fi
+
+    if ! deploy_module; then
+        log_error "Module deployment failed"
+        if [[ "$ROLLBACK_AVAILABLE" == true ]]; then
+            rollback_deployment
+        fi
+        exit 1
+    fi
+
+    if ! set_permissions; then
+        log_error "Permission setting failed"
+        if [[ "$ROLLBACK_AVAILABLE" == true ]]; then
+            rollback_deployment
+        fi
+        exit 1
+    fi
+
+    if ! clear_cache; then
+        log_warning "Cache clearing failed (non-critical)"
+    fi
+
+    if [[ "$DRY_RUN" != true ]]; then
+        if ! verify_deployment; then
+            log_error "Deployment verification failed"
+            if [[ "$ROLLBACK_AVAILABLE" == true ]]; then
+                rollback_deployment
+            fi
+            exit 1
+        fi
+    fi
+
+    # Log successful deployment
+    echo "DEPLOYMENT_SUCCESS=$(date)" >> "$DEPLOYMENT_LOG"
+
     log_success "Deployment completed successfully!"
-    
+
     if [[ "$DRY_RUN" != true ]]; then
         log_info ""
         log_info "Next steps:"
         log_info "1. Check Omeka S admin interface for module status"
         log_info "2. Test module functionality"
-        log_info "3. Verify CSS and viewers work correctly"
+        log_info "3. Verify theme settings and presets work correctly"
+        log_info "4. Check deployment log: $DEPLOYMENT_LOG"
+
+        if [[ "$ROLLBACK_AVAILABLE" == true ]]; then
+            log_info "5. Backup available for rollback if needed"
+        fi
     fi
 }
 
