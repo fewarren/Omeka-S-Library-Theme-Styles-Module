@@ -12,27 +12,18 @@ use LibraryThemeStyles\Service\ThemeSettingsService;
 
 class AdminController extends AbstractActionController
 {
-    /** @var ApiManager */
-    private $api;
+    private ApiManager $api;
+    private ErrorHandler $errorHandler;
+    private ThemeSettingsService $themeSettingsService;
 
-    /** @var ErrorHandler */
-    private $errorHandler;
-
-    /** @var ThemeSettingsService */
-    private $themeSettingsService;
-
-    public function __construct(ApiManager $api)
-    {
+    public function __construct(
+        ApiManager $api,
+        ErrorHandler $errorHandler,
+        ThemeSettingsService $themeSettingsService
+    ) {
         $this->api = $api;
-        $this->errorHandler = new ErrorHandler();
-
-        // Initialize theme settings service
-        $this->themeSettingsService = new ThemeSettingsService(
-            $this->api,
-            $this->settings(),
-            $this->siteSettings(),
-            $this->errorHandler
-        );
+        $this->errorHandler = $errorHandler;
+        $this->themeSettingsService = $themeSettingsService;
     }
 
     public function indexAction()
