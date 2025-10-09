@@ -16,6 +16,13 @@ class AdminController extends AbstractActionController
     private ErrorHandler $errorHandler;
     private ThemeSettingsService $themeSettingsService;
 
+    /**
+     * Create an AdminController with its required services.
+     *
+     * @param ApiManager $api Manager for performing API-related operations.
+     * @param ErrorHandler $errorHandler Handles validation, error formatting, and wrapped operations.
+     * @param ThemeSettingsService $themeSettingsService Service responsible for applying and saving theme preset settings.
+     */
     public function __construct(
         ApiManager $api,
         ErrorHandler $errorHandler,
@@ -26,6 +33,19 @@ class AdminController extends AbstractActionController
         $this->themeSettingsService = $themeSettingsService;
     }
 
+    /**
+     * Render and process the admin theme settings page, handling preset load/save actions.
+     *
+     * Processes POST requests to either apply a preset's defaults to a site's theme settings
+     * ("load_defaults_into_settings") or save a site's current settings as a preset default
+     * ("save_settings_as_defaults"). Validates the preset and site slug, collects success or
+     * error feedback, and exposes the resulting message and error state to the view.
+     *
+     * @return ViewModel Contains:
+     *   - `message` (string|null): success message when an action completes,
+     *   - `error` (string|null): validation or operation error message,
+     *   - `siteSlug` (string|null): the site query parameter passed to the action.
+     */
     public function indexAction()
     {
         $request = $this->getRequest();
@@ -98,4 +118,3 @@ class AdminController extends AbstractActionController
 
 
 }
-
