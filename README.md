@@ -1,266 +1,94 @@
-# LibraryThemeStyles (Omeka S Module)
+# Library Theme (Omeka S)
 
-A comprehensive helper module for Omeka S that provides advanced theme management capabilities for the Library Theme. Features include design preset application, theme settings backup/restore, and a modern service-oriented architecture for reliable theme configuration management.
+A production-focused Omeka S theme tailored to the Library’s design system, with flexible typography, unified colors/shape, and clean, minimal runtime assets. Cormorant Garamond support is included. This theme builds on the excellent work of Daniel Berthereau who created the Cumulus theme which provided the starting point. The theme intent is to provide extremely customizable elements like type styles, colors, hover aestics, etc. It also provides enhanced media item thumbnail operation and two alternate styles.  The styles can be saved and restored using the companion module, LibraryThemeStyles.
+
+- Omeka S compatibility: ^4.1.0
+- Zero build required: no npm install, no bundling
+- Minimal CSS/JS, cache-busted, CDN fonts
 
 ## Features
 
-- **Design Presets**: Apply Modern or Traditional design presets to sites
-- **Settings Management**: Backup and restore theme settings across sites
-- **Service Architecture**: Modern, maintainable codebase with comprehensive error handling
-- **Advanced Tools**: Inspect, compare, and verify theme settings
-- **User-Friendly Interface**: Both simple and advanced configuration options
-- **Robust Error Handling**: Comprehensive validation and user-friendly error messages
-
-## Compatibility and Version
-
-- **Omeka S**: ^4.1.0 (see config/module.ini)
-- **Module Version**: 2.0.0 (Major refactor with service architecture)
-- **Intended Theme**: "Library Theme" (theme slug defaults to `library-theme` when the active theme cannot be detected)
-- **PHP**: ^8.0 (with strict typing support)
-
-## Architecture
-
-This module follows modern PHP best practices with a service-oriented architecture:
-
-- **PresetManager**: Centralized preset definition and management
-- **ThemeSettingsService**: Business logic for theme operations
-- **ModuleConfigService**: Configuration form handling
-- **ErrorHandler**: Comprehensive error handling and logging
-- **ModuleConfig**: Centralized configuration constants
-
-## How to Access
-
-### Full Toolset (Recommended)
-**Admin → Modules → LibraryThemeStyles → Configure**
-- Complete interface with all advanced tools
-- Inspect, verify, diff, and load stored defaults
-- Debug options and detailed feedback
-
-### Quick Interface
-**`/admin/library-theme-styles`**
-- Simplified interface for common operations
-- Apply presets and save current settings
-- Ideal for routine theme management
-
-## What This Module Does
-
-### Core Operations
-- **Apply Presets**: Apply Modern or Traditional design presets to any site
-- **Save Settings**: Capture current site theme settings as preset defaults
-- **Load Defaults**: Restore previously saved settings to a site
-- **Verify Settings**: Compare current settings with stored defaults
-- **Inspect Settings**: View individual setting values and summaries
-
-### Advanced Features
-- **Setting Comparison**: Detailed diff between current settings and presets
-- **Validation**: Comprehensive input validation with user-friendly error messages
-- **Logging**: Detailed operation logging for debugging and audit trails
-- **Error Recovery**: Graceful handling of errors with rollback capabilities
-
-## Presets Included
-
-### Modern Preset
-- **Typography**: Cormorant Garamond headings with Helvetica body text
-- **Colors**: Warm gold primary (#b37c05) with sacred gold accents (#D4AF37)
-- **Style**: Contemporary design with clean lines and modern spacing
-- **Features**: Pill-style breadcrumbs and navigation elements
-
-### Traditional Preset
-- **Typography**: Georgia headings and body text for classic readability
-- **Colors**: Deep navy primary (#1F3A5F) with burgundy accents (#7A1E3A)
-- **Style**: Classic, academic design with traditional spacing
-- **Features**: Conservative styling suitable for institutional sites
+- Style Presets: Traditional, Modern (Library)
+- Typography controls: H1, H2, H3, Body (family, size, weight, style, color)
+- Colors & Shape: primary, accent; global box border width/radius
+- TOC styling: font, size (or rem override), weight/style, colors + hover
+- Pagination styling: background, text, hover background/text, size, typography
+- Menu & Footer typography
+- Breadcrumbs pill style toggle
+- Resource Page Regions enabled (items, item sets, media)
+- Runtime caption background guard for video thumbnails
+- Debug gating: console logs only when URL contains ?debug
 
 ## Installation
 
-### Requirements
-- Omeka S ^4.1.0
-- PHP ^8.0 with strict typing support
-- LibraryTheme installed and active
+1) Copy this theme directory to Omeka S themes folder and activate in Admin → Sites → Theme.
+2) Configure the theme in Admin → Sites → Theme settings.
 
-### Installation Steps
-1. **Download**: Place this module folder in your Omeka S installation at `modules/LibraryThemeStyles`
-2. **Install**: In Admin → Modules, click Install/Enable for "LibraryThemeStyles"
-3. **Configure**: Access the configuration interface via Admin → Modules → LibraryThemeStyles → Configure
-4. **Verify**: Test with a site to ensure proper functionality
+No build steps are required.
 
-### No Database Changes
-- No database migrations are required
-- Settings are stored in Omeka's existing settings system
-- Safe to install and uninstall without data loss
+## Configuration Overview
 
-## Usage Guide
+- Preset selection: Settings → Style Preset (Traditional or Modern). Saved settings are used at render time with preset fallback for unspecified values.
+- Typography:
+  - H1/H2/H3/Body families include Georgia, Cormorant Garamond, Helvetica Neue, Arial, etc.
+  - Body font-size is applied only to the body element; headings retain their own sizes. This fixes prior HTML block H2 size issues.
+- Colors & Shape:
+  - Primary and accent colors drive headings/hover, etc.
+  - Global “Box Border Width” and “Box Border Radius” control pill/box styling across TOC, breadcrumbs, pagination, nav.
+- TOC:
+  - Choose size via preset options or override precisely using “TOC Font Size (rem)”.
+  - Text/background + hover colors are explicitly configurable.
+- Pagination:
+  - Background/text color and explicit hover background/text color.
+  - Button size (small/medium/large) and full typography controls.
+- Header & Branding:
+  - Logo, header height, optional Browse/Search buttons (via simple URL fields).
+- Tagline:
+  - Family, size, weight/style, color, and hover colors.
+- Menu & Footer typography:
+  - Family, weight/style, and colors (footer uses Footer Typography group).
+- Breadcrumbs:
+  - Pill style toggle (breadcrumbs_pill_style), enabled by default.
+  - Include current page toggle (breadcrumbs_include_current).
+  - Typography: font family, size (preset or rem override via breadcrumbs_font_size_rem), weight, style.
+  - Colors: text/background and explicit hover text/background colors.
+- Page Title:
+  - Pill style toggle (page_title_pill_style) to enable/disable rounded pill styling.
 
-### Quick Start
-1. **Navigate** to Admin → Modules → LibraryThemeStyles → Configure
-2. **Enter Site Slug** (e.g., "library")
-3. **Choose Preset** (Modern or Traditional)
-4. **Click "Apply Preset to This Site"**
+## Behavior and Rendering
 
-### Typical Workflows
+- Dynamic CSS partial (view/common/theme-setting-css.phtml) injects CSS using saved settings with preset fallback.
+- CSS load order: library.css → library-polish.css → library-reoriented-design.css → font-overrides.css (highest specificity).
+- Fonts: Cormorant Garamond is loaded via Google Fonts.
+- Captions: asset/js/caption-fix.js enforces white backgrounds for video thumbnail tiles and captions as a safety guard.
+- Debugging: internal debug logging silenced by default; add `?debug` to the URL to enable.
 
-#### Apply a Preset to a Site
-1. Enter Site Slug
-2. Choose preset (Modern/Traditional)
-3. Click "Apply Preset to This Site"
-4. Verify changes in the site's theme settings
+## Dev Tools
 
-#### Save Current Look as Defaults
-1. Configure your site's theme settings to your liking
-2. Enter Site Slug
-3. Choose preset slot (Modern/Traditional)
-4. Click "Save This Site's Current Settings as Preset Defaults"
-5. Optional: Click "Verify Defaults vs Current" to confirm
+- dev-tools/export-modern-defaults.php (CLI):
+  - Export current site’s saved theme settings as JSON for updating defaults.
+  - Usage: `php dev-tools/export-modern-defaults.php <site_id>` (run on the host with access to /var/www/omeka-s/config/database.ini)
+  - Keys include modern fields (box_border_width/radius, explicit pagination hover colors, accent_color).
 
-#### Restore from Saved Defaults
-1. Enter Site Slug
-2. Choose preset (Modern/Traditional)
-3. Click "Load Defaults Back into Site"
-4. Verify: "Verify Defaults vs Current" should show no differences
+## Companion module: LibraryThemeStyles (presets/save & restore)
 
-### Advanced Tools
+- Location: /var/www/omeka-s/modules/LibraryThemeStyles
+- Preset maps updated to use breadcrumbs_* keys and include both breadcrumbs_pill_style and page_title_pill_style.
+- Save defaults: stores all current theme settings (including new keys) as JSON.
+- Load defaults: applies built-in presets or stored defaults, including the new settings.
+- Note: Active theme is LibraryTheme; WorkingLibraryTheme is a backup and not targeted by DEPLOY.sh.
 
-#### Inspect Theme Settings
-- **Purpose**: View current theme settings summary
-- **Usage**: Enter site slug and click "Show Current Settings Summary"
-- **Output**: Count of settings and sample keys for verification
+See MAINTENANCE.md for safe operating procedures, annual maintenance (footer year), and lessons learned.
 
-#### Check Specific Setting
-- **Purpose**: Inspect individual setting values
-- **Usage**: Enter site slug and setting key (e.g., `tagline_hover_background_color`)
-- **Output**: Current value of the specified setting
+## Project Structure (selected)
 
-#### Compare to Preset
-- **Purpose**: See differences between current settings and built-in presets
-- **Usage**: Enter site slug, choose preset, click "Compare to Preset"
-- **Output**: List of differences with current vs. preset values
-
-#### Verify Defaults vs Current
-- **Purpose**: Compare stored defaults with current site settings
-- **Usage**: Enter site slug, choose preset, click "Verify Defaults vs Current"
-- **Output**: Missing keys, value differences, and match statistics
-
-## Technical Details
-
-### How It Works
-- **Theme Detection**: Automatically detects active theme slug for the site
-- **Settings Storage**: Uses namespaced keys (`theme_settings_<themeSlug>`) for site-specific settings
-- **Defaults Storage**: Saves preset defaults in global settings as JSON under keys like `LibraryThemeStyles_defaults_modern`
-- **Fallback Logic**: Falls back to `library-theme` slug if theme detection fails
-
-### Service Architecture
-```
-Module.php
-├── ModuleConfigService (Form handling)
-│   ├── ThemeSettingsService (Business logic)
-│   ├── ErrorHandler (Error management)
-│   └── PresetManager (Preset definitions)
-└── ModuleConfig (Configuration constants)
-```
-
-### Error Handling
-- **Input Validation**: Comprehensive validation of all user inputs
-- **Error Logging**: Detailed logging with unique error IDs for support
-- **User-Friendly Messages**: Technical errors converted to understandable messages
-- **Graceful Degradation**: System continues working even when errors occur
-
-### Security Features
-- **Input Sanitization**: All inputs are validated and sanitized
-- **Type Safety**: Strict typing throughout the codebase
-- **Error Boundaries**: Errors are contained and don't crash the system
-- **Audit Trail**: All operations are logged for security and debugging
-
-## Troubleshooting
-
-### Common Issues
-
-#### "Verify defaults vs current shows defaults=0"
-- **Cause**: No stored defaults exist for that preset
-- **Solution**: Click "Save This Site's Current Settings as Preset Defaults" first
-
-#### "A field in the Theme Settings screen didn't change"
-- **Cause**: Browser cache or form state issues
-- **Solution**: 
-  1. Refresh the page
-  2. If still incorrect, inspect the specific key value
-  3. Save the Theme Settings form once and reload
-  4. Check for theme customizations that might override settings
-
-#### "Error ID: lts_error_xxxxx"
-- **Cause**: System error occurred during operation
-- **Solution**: 
-  1. Note the error ID for support
-  2. Check the error message for specific guidance
-  3. Try the operation again
-  4. Contact support with the error ID if problem persists
-
-#### "Site slug validation failed"
-- **Cause**: Invalid or missing site slug
-- **Solution**: 
-  1. Verify the site slug exists in Admin → Sites
-  2. Use exact slug (case-sensitive)
-  3. Ensure site is active and accessible
-
-### Debug Mode
-Enable debug mode by checking the "Debug" option in the configuration form:
-- **Before/After Counts**: Shows setting counts before and after operations
-- **Sample Data**: Displays sample of stored defaults
-- **Detailed Logging**: Additional information for troubleshooting
-
-### Getting Help
-1. **Check Error Messages**: Look for specific error IDs and messages
-2. **Enable Debug Mode**: Use debug options for additional information
-3. **Inspect Settings**: Use "Check a specific setting by name" to verify values
-4. **Review Logs**: Check system logs for detailed error information
-
-## Uninstalling
-
-### Safe Removal
-- **Settings Preserved**: Removing this module does not delete site theme settings
-- **Defaults Preserved**: Stored preset defaults remain in the system
-- **No Data Loss**: Safe to disable/uninstall without losing theme configuration
-- **Reversible**: Can be reinstalled later with all data intact
-
-### Clean Uninstall (Optional)
-If you want to remove all traces of the module:
-1. Note any stored defaults you want to keep
-2. Disable the module in Admin → Modules
-3. Manually remove stored defaults from global settings (keys starting with `LibraryThemeStyles_defaults_`)
-4. Remove the module folder from `modules/LibraryThemeStyles`
-
-## Development
-
-### Contributing
-- Follow PSR-12 coding standards
-- Use strict typing throughout
-- Add comprehensive error handling
-- Include unit tests for new features
-- Update documentation for changes
-
-### Testing
-- Test all operations with both Modern and Traditional presets
-- Verify error handling with invalid inputs
-- Test with multiple sites and theme configurations
-- Ensure backward compatibility with existing installations
-
-## Changelog
-
-### Version 2.0.0 (Current)
-- **Major Refactor**: Complete rewrite with service-oriented architecture
-- **Enhanced Error Handling**: Comprehensive validation and user-friendly messages
-- **Improved Performance**: Optimized code with reduced duplication
-- **Better Documentation**: Complete documentation overhaul
-- **Type Safety**: Full PHP 8.0+ strict typing support
-
-### Version 1.x.x (Legacy)
-- Basic preset application and settings management
-- Simple error handling
-- Monolithic code structure
+- config/theme.ini: Theme settings and element groups (admin UI grouping)
+- view/layout/layout.phtml: Main layout; includes CSS/JS and preset fallback handling
+- view/common/theme-setting-css.phtml: Dynamic CSS from settings
+- asset/css/*.css: Base and override styles
+- asset/js/caption-fix.js: Runtime guard for caption/tile white backgrounds
+- dev-tools/export-modern-defaults.php: Exporter for capturing current settings
 
 ## License
 
-This module is released under the same license as Omeka S. See the Omeka S license for details.
-
-## Support
-
-For issues, questions, or contributions, please refer to the module's documentation or contact the development team with specific error IDs and detailed descriptions of problems encountered.
+Distributed under the site’s standard terms for themes. See project LICENSE if included; Omeka S is GPLv3.
