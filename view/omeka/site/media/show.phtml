@@ -1,0 +1,157 @@
+<?php
+$translate = $this->plugin('translate');
+$showLayout = $this->themeSetting('show_layout');
+$tabLayout = ($this->themeSetting('tab_navigation_layout')) ? $this->themeSetting('tab_navigation_layout') : 'vertical';
+$tabContent = ($this->themeSetting('tab_navigation_content')) ? $this->themeSetting('tab_navigation_content') : 'main';
+$this->headLink()->appendStylesheet($this->assetUrl('css/resource-page-blocks.css'));
+$fullWidthMainBlockContent = $this->resourcePageBlocks($media, 'full_width_main');
+$fullWidthMainHasBlocks = $fullWidthMainBlockContent->hasBlocks();
+$mainWithSidebarBlockContent = $this->resourcePageBlocks($media);
+$mainWithSidebarHasBlocks= $mainWithSidebarBlockContent->hasBlocks();
+$leftSidebarBlockContent = $this->resourcePageBlocks($media, 'left');
+$leftSidebarHasBlocks = $leftSidebarBlockContent->hasBlocks();
+$rightSidebarBlockContent = $this->resourcePageBlocks($media, 'right');
+$rightSidebarHasBlocks = $rightSidebarBlockContent->hasBlocks();
+
+$tabManager = null;
+try {
+    $tabManager = $this->TabManager();
+} catch (\Throwable $e) {
+    $tabManager = null;
+}
+$tabNavigationRegion = $tabManager ? $tabManager->getTabNavigationRegion($media) : null;
+
+$filterLocale = (bool) $this->siteSetting('filter_locale_values');
+$lang = $this->lang();
+$valueLang = $filterLocale ? [$lang, ''] : null;
+?>
+<?php $this->htmlElement('body')->appendAttribute('class', 'media resource show'); ?>
+
+<div class="resource-title">
+<?php echo $this->pageTitle($media->displayTitle(null, $valueLang), 2); ?>
+<h3 class="label"><?php echo $translate('Media'); ?></h3>
+</div>
+
+<div class="<?php echo ($showLayout == 'inline') ? 'inline' : 'stack'; ?>">
+    <?php $this->trigger('view.show.before'); ?>
+    <?php
+        // Smart media rendering: detect type and embed appropriate viewer/player
+        if (isset($media) && method_exists($media, 'mediaType')) {
+            $mediaType = (string) $media->mediaType();
+            $escape = $this->plugin('escapeHtml');
+            $escapeAttr = $this->plugin('escapeHtmlAttr');
+
+            $hasOriginal = $media->hasOriginal();
+            $isPDF = (stripos($mediaType, 'pdf') !== false);
+            $isAudio = (stripos($mediaType, 'audio/') === 0);
+            $isVideo = (stripos($mediaType, 'video/') === 0);
+
+            echo "\n<!-- DEBUG LT media/show.phtml: MEDIA TYPE DETECTION -->\n";
+            echo "<!-- mediaType=" . $mediaType . " -->\n";
+            echo "<!-- hasOriginal=" . ($hasOriginal ? 'YES' : 'NO') . " -->\n";
+            echo "<!-- isPDF=" . ($isPDF ? 'YES' : 'NO') . " -->\n";
+            echo "<!-- isAudio=" . ($isAudio ? 'YES' : 'NO') . " -->\n";
+            echo "<!-- isVideo=" . ($isVideo ? 'YES' : 'NO') . " -->\n";
+
+            // PDF: Embed in iframe for immediate viewing
+            if ($isPDF && $hasOriginal) {
+                $pdfUrl = $media->originalUrl();
+                $title = $media->displayTitle() ?: $media->filename();
+                echo "\n<!-- DEBUG LT media/show.phtml: RENDERING PDF VIEWER -->\n";
+                echo sprintf(
+                    '<div class="pdf-viewer-container" style="width: 100%%; height: 800px; margin-bottom: 20px;">
+    <iframe src="%s" width="100%%" height="100%%" style="border: 1px solid #ccc;" title="%s">
+        <p>%s <a href="%s">%s</a></p>
+    </iframe>
+</div>',
+                    $escapeAttr($pdfUrl),
+                    $escapeAttr($title),
+                    $escape($this->translate('Your browser does not support embedded PDFs. Please')),
+                    $escapeAttr($pdfUrl),
+                    $escape($this->translate('download the PDF to view it'))
+                );
+            }
+            // Audio: Ensure HTML5 audio player renders
+            elseif ($isAudio && $hasOriginal) {
+                echo "\n<!-- DEBUG LT media/show.phtml: RENDERING AUDIO PLAYER via media->render() -->\n";
+                $audioOutput = $media->render(['controls' => true, 'preload' => 'metadata']);
+                echo "<!-- Audio render output length: " . strlen($audioOutput) . " bytes -->\n";
+                echo "<!-- Audio render output preview: " . substr(strip_tags($audioOutput), 0, 100) . "... -->\n";
+                echo $audioOutput;
+                echo "\n<!-- DEBUG LT media/show.phtml: AUDIO PLAYER RENDERED -->\n";
+            }
+            // Video and other types: use standard renderer
+            else {
+                echo "\n<!-- DEBUG LT media/show.phtml: RENDERING via standard media->render() -->\n";
+                $renderOutput = $media->render();
+                echo "<!-- Render output length: " . strlen($renderOutput) . " bytes -->\n";
+                echo $renderOutput;
+            }
+        } else {
+            echo "\n<!-- DEBUG LT media/show.phtml: NO MEDIA OR NO mediaType METHOD -->\n";
+        }
+    ?>
+    <?php if ($fullWidthMainHasBlocks): ?>
+    <div class="full-width-main">
+        <?php /* Removed call to non-existent getBlocksArray(); use getBlocks() below */ ?>
+
+        <?php if ($tabManager && $tabNavigationRegion == 'full_width_main'): ?>
+            <?php echo $tabManager->renderTabsOnly($media, $tabContent); ?>
+        <?php endif; ?>
+
+        <?php if ($tabManager && $tabContent == 'full_width_main'): ?>
+            <?php echo $tabManager->renderPanels($media, $tabContent, $tabLayout); ?>
+        <?php else: ?>
+            <?php echo $fullWidthMainBlockContent->getBlocks(); ?>
+        <?php endif; ?>
+    </div>
+    <?php endif; ?>
+
+    <?php if ($mainWithSidebarHasBlocks || $leftSidebarHasBlocks || $rightSidebarHasBlocks): ?>
+
+    <?php
+    if ($leftSidebarHasBlocks && $rightSidebarHasBlocks) {
+        $sidebarWidth = '3';
+        $mainWidth = '6';
+    } else {
+        $sidebarWidth = '4';
+        $mainWidth = '8';
+    }
+    ?>
+    <div class="grid-x grid-margin-x">
+        <?php if ($leftSidebarHasBlocks): ?>
+        <div class="left-sidebar cell medium-<?php echo $sidebarWidth; ?>">
+            <?php if ($tabManager && $tabNavigationRegion == 'left'): ?>
+                <?php echo $tabManager->renderTabsRegion($media, 'left'); ?>
+            <?php else: ?>
+                <?php echo $leftSidebarBlockContent->getBlocks(); ?>
+            <?php endif; ?>
+        </div>
+        <?php endif; ?>
+
+        <?php if ($mainWithSidebarHasBlocks): ?>
+        <div class="main-with-sidebar cell medium-<?php echo $mainWidth; ?>">
+            <?php if ($tabManager && $tabNavigationRegion == 'main'): ?>
+                <?php echo $tabManager->renderTabsOnly($media, $tabContent, $tabLayout); ?>
+            <?php endif; ?>
+            <?php if ($tabManager && $tabNavigationRegion && ($tabContent == 'main')): ?>
+                <?php echo $tabManager->renderPanels($media, $tabContent, $tabLayout); ?>
+            <?php else: ?>
+                <?php echo $mainWithSidebarBlockContent->getBlocks(); ?>
+            <?php endif; ?>
+        </div>
+        <?php endif; ?>
+
+        <?php if ($rightSidebarHasBlocks): ?>
+        <div class="right-sidebar cell medium-<?php echo $sidebarWidth; ?>">
+            <?php if ($tabManager && $tabNavigationRegion == 'right'): ?>
+                <?php echo $tabManager->renderTabsRegion($media, 'right', $tabContent, $tabLayout); ?>
+            <?php else: ?>
+                <?php echo $rightSidebarBlockContent->getBlocks(); ?>
+            <?php endif; ?>
+        </div>
+        <?php endif; ?>
+    </div>
+    <?php endif; ?>
+    <?php $this->trigger('view.show.after'); ?>
+</div>
